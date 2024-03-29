@@ -174,9 +174,9 @@ def load_dataset(args, dataset):
         return train_sentences, val_sentences, test_sentences, train_labels, val_labels, test_labels, noisy_train_labels, noisy_val_labels, noisy_test_labels
     
     elif dataset.lower() == 'numclaim' or dataset.lower() == 'sa' or dataset.lower() == 'fomc':
-        train_file_path = f"../datasets/train_{dataset.lower()}_example.csv"
-        valid_file_path = f"../datasets/valid_{dataset.lower()}_example.csv"
-        test_file_path = f"../datasets/test_{dataset.lower()}_example.csv"
+        train_file_path = f"datasets/train_{dataset.lower()}_example.csv"
+        valid_file_path = f"datasets/valid_{dataset.lower()}_example.csv"
+        test_file_path = f"datasets/test_{dataset.lower()}_example.csv"
 
         train_file = pd.read_csv(train_file_path)
         train_true_labels = torch.tensor(train_file['true_label'].values, device=args.device)
@@ -198,8 +198,11 @@ def load_dataset(args, dataset):
     
 
 def read_data(args, num_labels):
-    # load dataset
-    train_sentences, val_sentences, test_sentences, train_labels, val_labels, test_labels = load_dataset(args, args.dataset)
+    if args.dataset == '20news':
+        # load dataset
+        train_sentences, val_sentences, test_sentences, train_labels, val_labels, test_labels = load_dataset(args, args.dataset)
+    if args.dataset == 'sa' or args.dataset == 'fomc' or args.dataset == 'numclaim':
+        train_sentences, val_sentences, test_sentences, train_labels, noisy_train_labels, val_labels, noisy_validation_labels, test_labels = load_dataset(args, args.dataset)
 
     tokenizer = BertTokenizer.from_pretrained(args.bert, do_lower_case=True)
 
@@ -279,16 +282,17 @@ def read_data(args, num_labels):
     test_inputs = torch.tensor(test_input_ids)
     test_labels = torch.tensor(test_labels)
     test_masks = torch.tensor(test_attention_masks)
-
-    if args.noise_type == 'SN':
-        noisy_train_labels = corrupt_dataset_SN(args, train_labels, num_labels)
-        noisy_validation_labels = corrupt_dataset_SN(args, validation_labels, num_labels)
-    elif args.noise_type == 'ASN':
-        noisy_train_labels = corrupt_dataset_ASN(args, train_labels, num_labels)
-        noisy_validation_labels = corrupt_dataset_ASN(args, validation_labels, num_labels)
-    elif args.noise_type == 'IDN':
-        noisy_train_labels = corrupt_dataset_IDN(args, train_inputs, train_labels, num_labels)
-        noisy_validation_labels = corrupt_dataset_IDN(args, validation_inputs, validation_labels, num_labels)
+    
+    if args.dataset == '20news':
+        if args.noise_type == 'SN':
+            noisy_train_labels = corrupt_dataset_SN(args, train_labels, num_labels)
+            noisy_validation_labels = corrupt_dataset_SN(args, validation_labels, num_labels)
+        elif args.noise_type == 'ASN':
+            noisy_train_labels = corrupt_dataset_ASN(args, train_labels, num_labels)
+            noisy_validation_labels = corrupt_dataset_ASN(args, validation_labels, num_labels)
+        elif args.noise_type == 'IDN':
+            noisy_train_labels = corrupt_dataset_IDN(args, train_inputs, train_labels, num_labels)
+            noisy_validation_labels = corrupt_dataset_IDN(args, validation_inputs, validation_labels, num_labels)
     # Create an iterator of our data with torch DataLoader. 
     return train_inputs, train_masks, train_labels, noisy_train_labels, validation_inputs, validation_masks, validation_labels, noisy_validation_labels, test_inputs, test_masks, test_labels
 
@@ -380,7 +384,8 @@ def read_noisy_data(args, num_labels):
 
 
 def create_dataset(args):
-    if args.dataset == '20news' or args.dataset == 'agnews' or args.dataset == 'wos':
+    if args.dataset == '20news' or args.dataset == 'agnews' or args.dataset == 'wos' \
+        or args.dataset == 'numclaim' or args.dataset == 'fomc' or args.dataset == 'sa':
         if args.dataset == '20news':
             num_labels = 20
             args.num_classes = 20
