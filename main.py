@@ -217,7 +217,7 @@ def main():
     accuracy_pre, accuracy = func.merge_classifier_and_autoencoder(test_z_dataloader, best_model, vae_model, args.vae_batch_size)
     print("The performance after denoising:", accuracy)
     f = open(f'results/{args.dataset}-results.log', 'a')
-    f.write('DyGen-'+args.noise_type+'-'+str(args.noise_ratio)+'-'+str(args.vae_epochs)+'-'+str(args.lambda_t)+'-'+str(args.warmup_epochs)+'-'+str(args.n_model)+'-'+str(args.epochs)+'-'+str(args.seed))
+    f.write('DyGen-'+args.noise_type+'-'+str(args.noise_ratio)+'-'+str(args.total_iter)+'-'+str(args.lambda_t)+'-'+str(args.warmup_epochs)+'-'+str(args.n_model)+'-'+str(args.epochs)+'-'+str(args.seed))
     f.write('\n')
     f.write("The orignal model performance is: "+str(accuracy_pre))
     f.write('\n')
