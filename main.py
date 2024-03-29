@@ -23,18 +23,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", default=5e-5, type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--vae_lr", default=5e-5, type=float, help="The initial learning rate for Adam.")
-    parser.add_argument("--train_batch_size", default=32, type=int, help="Batch size for training.")
-    parser.add_argument("--eval_batch_size", default=128, type=int, help="Batch size for training.")
-    parser.add_argument("--vae_batch_size", default=32, type=int, help="Batch size for training.")
+    parser.add_argument("--train_batch_size", default=64, type=int, help="Batch size for training.")
+    parser.add_argument("--eval_batch_size", default=64, type=int, help="Batch size for training.")
+    parser.add_argument("--vae_batch_size", default=128, type=int, help="Batch size for training.")
     parser.add_argument("--epochs", default=10, type=int, help="Number of epochs for training.")
     parser.add_argument("--vae_epochs", default=20, type=int, help="Number of epochs for training.")
     parser.add_argument("--seed", default=0, type=int, help="Number of epochs for training.")
     parser.add_argument("--dataset", default='20news', type=str, help="dataset")
     parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay if we apply some.")
     parser.add_argument('--saved_dataset', type=str, default='n', help='whether save the preprocessed pt file of the dataset')
-    parser.add_argument("--noise_ratio", type=float, default=0.0, help='The ratio of noisy data to be poisoned.')
-    parser.add_argument("--noise_type", type=str, default="s")
-    parser.add_argument("--n_model", type=int, default=2, help='The number of detection-relabeling iterations.')
+    parser.add_argument("--noise_ratio", type=float, default=0.3, help='The ratio of noisy data to be poisoned.')
+    parser.add_argument("--noise_type", type=str, default="SN")
+    parser.add_argument("--n_model", type=int, default=3, help='The number of detection-relabeling iterations.')
     parser.add_argument("--knn_mode", type=str, default='onehot', help='Choose the relabeling method: second_close')
     parser.add_argument("--selected_class", type=str, default='1', help='Choose the relabeling method: second_close')
     parser.add_argument("--prior_norm", type=int, default=5, help='Choose the relabeling method: second_close')
@@ -81,6 +81,15 @@ def main():
     elif args.dataset == 'semeval':
         num_labels = 9
         args.num_classes = 9
+    elif args.dataset == 'numclaim':
+        num_labels = 2
+        args.num_classes = 2
+    elif args.dataset == 'sa':
+        num_labels = 3
+        args.num_classes = 3
+    elif args.dataset == 'fomc':
+        num_labels = 3
+        args.num_classes = 3
     
     train_data, train_sampler, train_dataloader, validation_data, validation_sampler, validation_dataloader, test_data, test_sampler, test_dataloader = create_dataset(args)
     noisy_train_labels = torch.tensor([train_data[idx][-1] for idx in range(len(train_data))])
@@ -138,6 +147,24 @@ def main():
     z0_test = z_test[:, :, :D3]
     train_priors = []
     val_priors = []
+
+    torch.save(z_train, f'stage1_buffer/{args.dataset}/z_train.pt')
+    torch.save(z_val, f'stage1_buffer/{args.dataset}/z_val.pt')
+    torch.save(z_test, f'stage1_buffer/{args.dataset}/z_test.pt')
+    torch.save(best_model, f'stage1_buffer/{args.dataset}/best_model.pt')
+    torch.save(markers_list, f'stage1_buffer/{args.dataset}/markers_list.pt')
+    torch.save(train_inputs, f'stage1_buffer/{args.dataset}/train_inputs.pt')
+    torch.save(validation_inputs, f'stage1_buffer/{args.dataset}/valid_inputs.pt')
+    torch.save(test_inputs, f'stage1_buffer/{args.dataset}/test_inputs.pt')
+    torch.save(train_masks, f'stage1_buffer/{args.dataset}/train_masks.pt')
+    torch.save(validation_masks, f'stage1_buffer/{args.dataset}/valid_masks.pt')
+    torch.save(test_masks, f'stage1_buffer/{args.dataset}/test_masks.pt')
+    torch.save(train_labels, f'stage1_buffer/{args.dataset}/train_true_labels.pt')
+    torch.save(validation_labels, f'stage1_buffer/{args.dataset}/valid_true_labels.pt')
+    torch.save(test_labels, f'stage1_buffer/{args.dataset}/test_true_labels.pt')
+    torch.save(noisy_train_labels, f'stage1_buffer/{args.dataset}/train_noisy_labels.pt')
+    torch.save(noisy_validation_labels, f'stage1_buffer/{args.dataset}/valid_noisy_labels.pt')
+
     for idx in range(M):
         knn_inputs = torch.cat((train_inputs, validation_inputs), 0)
         knn_masks = torch.cat((train_masks, validation_masks), 0)
@@ -179,7 +206,7 @@ def main():
     val_z_dataloader = DataLoader(val_z_data, sampler=val_z_sampler, batch_size=args.vae_batch_size)
     test_z_dataloader = DataLoader(test_z_data, sampler=test_z_sampler, batch_size=args.vae_batch_size)    
 
-    args.save_path = './cache/dygen_acc_{}_{}.npy'.format(args.noise_ratio, args.total_iter)
+    args.save_path = f'results/best_vae_{args.dataset}'
     
 
     print("================Start Training Stage IV Model: Estimate Transition Matrix!================")
@@ -189,8 +216,8 @@ def main():
 
     accuracy_pre, accuracy = func.merge_classifier_and_autoencoder(test_z_dataloader, best_model, vae_model, args.vae_batch_size)
     print("The performance after denoising:", accuracy)
-    f = open('./cache/{}-results.logs'.format(args.dataset), 'a')
-    f.write('DyGen-'+args.noise_type+'-'+str(args.noise_ratio)+'-'+str(args.total_iter)+'-'+str(args.lambda_t)+'-'+str(args.warmup_epochs)+'-'+str(args.n_model)+'-'+str(args.epochs)+'-'+str(args.seed))
+    f = open(f'results/{args.dataset}-results.log', 'a')
+    f.write('DyGen-'+args.noise_type+'-'+str(args.noise_ratio)+'-'+str(args.vae_epochs)+'-'+str(args.lambda_t)+'-'+str(args.warmup_epochs)+'-'+str(args.n_model)+'-'+str(args.epochs)+'-'+str(args.seed))
     f.write('\n')
     f.write("The orignal model performance is: "+str(accuracy_pre))
     f.write('\n')

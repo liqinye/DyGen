@@ -55,12 +55,12 @@ def load_dataset(args, dataset):
     if dataset == '20news':
         
         VALIDATION_SPLIT = 0.8
-        newsgroups_train  = fetch_20newsgroups(data_home='/localscratch/yzhuang43/datasets/20news', subset='train',  shuffle=True, random_state=args.seed)
+        newsgroups_train  = fetch_20newsgroups(data_home='../datasets/20news', subset='train',  shuffle=True, random_state=args.seed)
         newsgroups_train  = fetch_20newsgroups(data_home=args.path, subset='train',  shuffle=True, random_state=args.seed)
         print(newsgroups_train.target_names)
         print(len(newsgroups_train.data))
 
-        newsgroups_test  = fetch_20newsgroups(data_home='/localscratch/yzhuang43/datasets/20news', subset='test',  shuffle=False)
+        newsgroups_test  = fetch_20newsgroups(data_home='../datasets/20news', subset='test',  shuffle=False)
 
         print(len(newsgroups_test.data))
 
@@ -172,6 +172,28 @@ def load_dataset(args, dataset):
                 test_labels.append(d['label'])
             f.close()
         return train_sentences, val_sentences, test_sentences, train_labels, val_labels, test_labels, noisy_train_labels, noisy_val_labels, noisy_test_labels
+    
+    elif dataset.lower() == 'numclaim' or dataset.lower() == 'sa' or dataset.lower() == 'fomc':
+        train_file_path = f"../datasets/train_{dataset.lower()}_example.csv"
+        valid_file_path = f"../datasets/valid_{dataset.lower()}_example.csv"
+        test_file_path = f"../datasets/test_{dataset.lower()}_example.csv"
+
+        train_file = pd.read_csv(train_file_path)
+        train_true_labels = torch.tensor(train_file['true_label'].values, device=args.device)
+        train_noisy_labels = torch.tensor(train_file['noisy_label'].values, device=args.device)
+        train_input_sent = train_file['original_sent'].values
+
+        valid_file = pd.read_csv(valid_file_path)
+        valid_true_labels = torch.tensor(valid_file['true_label'].values, device=args.device)
+        valid_noisy_labels = torch.tensor(valid_file['noisy_label'].values, device=args.device)
+        valid_input_sent = valid_file['original_sent'].values
+
+        test_file = pd.read_csv(test_file_path)
+        test_labels = torch.tensor(test_file['true_label'].values, device=args.device)
+        test_noisy_labels = torch.tensor(test_file['noisy_label'].values, device=args.device)
+        test_input_sent = test_file['original_sent'].values
+
+        return train_input_sent, valid_input_sent, test_input_sent, train_true_labels, train_noisy_labels, valid_true_labels, valid_noisy_labels, test_labels
     
     
 
@@ -368,6 +390,16 @@ def create_dataset(args):
         elif args.dataset == 'wos':
             num_labels = 134
             args.num_classes = 134
+        elif args.dataset.lower() == 'numclaim':
+            num_labels = 2
+            args.num_classes = 2
+        elif args.dataset.lower() == 'sa':
+            num_labels = 3
+            args.num_classes = 3
+        elif args.dataset.lower() == 'fomc':
+            num_labels = 3
+            args.num_classes = 3
+            
         if args.saved_dataset == 'n':
             train_inputs, train_masks, train_labels, noisy_train_labels, validation_inputs, validation_masks, validation_labels, noisy_validation_labels, test_inputs, test_masks, test_labels = read_data(args, num_labels)
             train_data = TensorDataset(train_inputs, train_masks, train_labels, noisy_train_labels)

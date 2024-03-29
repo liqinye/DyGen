@@ -151,7 +151,7 @@ def train_stage1(args, train_dataloader, validation_dataloader, prediction_datal
             # Add batch to GPU
             batch = tuple(t.to(args.device) for t in batch)
             # Unpack the inputs from our dataloader
-            b_input_ids, b_input_mask, b_labels, _ = batch
+            b_input_ids, b_input_mask, _, b_labels = batch
             # Telling the model not to compute or store gradients, saving memory and speeding up validation
             with torch.no_grad():
             # Forward pass, calculate logit predictions
