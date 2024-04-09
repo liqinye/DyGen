@@ -58,7 +58,7 @@ def main():
     args.n_gpu = 1
     print(args)
     
-
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     args.device = device
     set_seed(args)
@@ -92,14 +92,14 @@ def main():
         args.num_classes = 3
     
     train_data, train_sampler, train_dataloader, validation_data, validation_sampler, validation_dataloader, test_data, test_sampler, test_dataloader = create_dataset(args)
-    noisy_train_labels = torch.tensor([train_data[idx][-1] for idx in range(len(train_data))])
+    noisy_train_labels = torch.tensor([train_data[idx][-1] for idx in range(len(train_data))], device=args.device)
     train_inputs = torch.stack([train_data[idx][0] for idx in range(len(train_data))], dim=0)
     train_masks = torch.stack([train_data[idx][1] for idx in range(len(train_data))], dim=0)
     train_labels = torch.stack([train_data[idx][2] for idx in range(len(train_data))], dim=0)
     validation_inputs = torch.stack([validation_data[idx][0] for idx in range(len(validation_data))], dim=0)
     validation_masks = torch.stack([validation_data[idx][1] for idx in range(len(validation_data))], dim=0)
     validation_labels = torch.stack([validation_data[idx][2] for idx in range(len(validation_data))], dim=0)
-    noisy_validation_labels = torch.tensor([validation_data[idx][-1] for idx in range(len(validation_data))])
+    noisy_validation_labels = torch.tensor([validation_data[idx][-1] for idx in range(len(validation_data))], device=args.device)
     test_inputs = torch.stack([test_data[idx][0] for idx in range(len(test_data))], dim=0)
     test_masks = torch.stack([test_data[idx][1] for idx in range(len(test_data))], dim=0)
     test_labels = torch.stack([test_data[idx][2] for idx in range(len(test_data))], dim=0)

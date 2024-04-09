@@ -45,7 +45,7 @@ class KNN_prior_dynamic:
         # 2. predict class of training dataset
         knn_embeds = self.z0.cpu().detach().numpy()
         class_preds = neigh.predict(knn_embeds)
-        class_preds = torch.tensor(np.int64(class_preds))
+        class_preds = torch.tensor(np.int64(class_preds), device=self.args.device)
         print('Prior made {} errors with train/val noisy labels'.format(torch.sum(class_preds!=self.y_hat)))
         print('Prior made {} errors with train/val clean labels'.format(torch.sum(class_preds!=self.y)))
         noisy_preds = torch.tensor([(class_preds[i] != self.y_hat[i]) and (class_preds[i] == self.y[i]) for i in range(len(class_preds))])
@@ -64,4 +64,4 @@ class KNN_prior_dynamic:
         print('Time : ', time.time() - self.time, 'proba information saved')
 
 
-        return dict['proba'], class_preds.numpy()
+        return dict['proba'], class_preds.cpu().numpy()
